@@ -1,0 +1,137 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f4f7f9;
+  color: #333;
+  margin: 2em auto;
+  max-width: 800px;
+  padding: 0 1em;
+}
+
+h1, h2 {
+  color: #2c3e50;
+  margin-bottom: 0.5em;
+}
+
+#invoiceForm {
+  background: #fff;
+  padding: 1.5em 2em;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  margin-bottom: 2em;
+}
+
+label {
+  display: block;
+  margin-top: 1em;
+  font-weight: 600;
+  color: #34495e;
+}
+
+input, select {
+  width: 100%;
+  padding: 0.6em 0.8em;
+  margin-top: 0.3em;
+  border: 1.8px solid #ccc;
+  border-radius: 6px;
+  font-size: 1em;
+  transition: border-color 0.3s ease;
+}
+
+input:focus, select:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 6px rgba(52, 152, 219, 0.3);
+}
+
+button {
+  cursor: pointer;
+  background-color: #3498db;
+  border: none;
+  color: white;
+  padding: 0.65em 1.3em;
+  font-size: 1em;
+  border-radius: 6px;
+  margin-top: 1.5em;
+  margin-right: 0.7em;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #2980b9;
+}
+
+button:active {
+  background-color: #1c5980;
+}
+
+#errorMessage {
+  margin-top: 1em;
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+#invoices {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+.invoice {
+  background: white;
+  padding: 1em 1.5em;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  line-height: 1.4;
+  color: #2c3e50;
+}
+
+.invoice strong {
+  font-size: 1.1em;
+  color: #34495e;
+}
+
+.invoice em {
+  color: #7f8c8d;
+}
+
+.actions {
+  margin-top: 1em;
+  display: flex;
+  gap: 0.8em;
+}
+
+.actions button {
+  background-color: #e67e22;
+  padding: 0.5em 1.1em;
+  font-size: 0.9em;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.actions button:hover {
+  background-color: #d35400;
+}
+
+.actions button:last-child {
+  background-color: #c0392b;
+}
+
+.actions button:last-child:hover {
+  background-color: #992d22;
+}
+
+/* Responsive kisebb képernyőkre */
+@media (max-width: 480px) {
+  #invoiceForm, .invoice {
+    padding: 1em;
+  }
+
+  button, .actions button {
+    width: 100%;
+    margin-right: 0;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+}

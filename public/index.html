@@ -1,0 +1,248 @@
+
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8" />
+  <title>Számlák kezelése</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Számlák kezelése</h1>
+
+  <div id="invoiceForm">
+    <h2 id="formTitle">Új számla</h2>
+    <input type="hidden" id="invoiceId" />
+    
+    <label for="issuer">Kiállító:</label>
+    <select id="issuer"></select>
+    
+    <label for="buyer">Vevő:</label>
+    <select id="buyer"></select>
+
+    <label for="invoice_number">Számla száma:</label>
+    <input type="text" id="invoice_number" placeholder="Számla száma" />
+
+    <label for="issue_date">Számla kelte:</label>
+    <input type="date" id="issue_date" />
+
+    <label for="completion_date">Teljesítés dátuma:</label>
+    <input type="date" id="completion_date" />
+
+    <label for="payment_deadline">Fizetési határidő:</label>
+    <input type="date" id="payment_deadline" />
+
+    <label for="total_amount">Végösszeg (Ft):</label>
+    <input type="number" id="total_amount" step="0.01" min="0" />
+
+    <label for="vat_rate">ÁFA kulcs (%):</label>
+    <input type="number" id="vat_rate" step="0.01" min="0" max="100" />
+
+    <button onclick="saveInvoice()">Mentés</button>
+    <button onclick="resetForm()">Mégse</button>
+
+    <div id="errorMessage" class="error" style="display:none;"></div>
+  </div>
+
+  <h2>Számlák</h2>
+  <div id="invoices"></div>
+
+  <script>
+    let partners = [];
+
+    async function fetchPartners() {
+      try {
+        const res = await fetch('/partners');
+        partners = await res.json();
+
+        const issuerSelect = document.getElementById('issuer');
+        const buyerSelect = document.getElementById('buyer');
+
+        issuerSelect.innerHTML = '';
+        buyerSelect.innerHTML = '';
+
+        partners.forEach(p => {
+          const option1 = document.createElement('option');
+          option1.value = p.id;
+          option1.textContent = `${p.name} (${p.tax_number})`;
+          issuerSelect.appendChild(option1);
+
+          const option2 = document.createElement('option');
+          option2.value = p.id;
+          option2.textContent = `${p.name} (${p.tax_number})`;
+          buyerSelect.appendChild(option2);
+        });
+      } catch (err) {
+        console.error('Hiba a partnerek betöltésekor:', err);
+      }
+    }
+
+    async function fetchInvoices() {
+      try {
+        const res = await fetch('/invoices');
+        const invoices = await res.json();
+        const container = document.getElementById('invoices');
+        container.innerHTML = '';
+
+        invoices.forEach(inv => {
+          const div = document.createElement('div');
+          div.className = 'invoice';
+          div.innerHTML = `
+            <strong>${inv.invoice_number}</strong><br/>
+            <em>Kiállító:</em> ${inv.issuer_name} (${inv.issuer_tax})<br/>
+            <em>Vevő:</em> ${inv.buyer_name} (${inv.buyer_tax})<br/>
+            <em>Számla kelte:</em> ${inv.issue_date}<br/>
+            <em>Teljesítés dátuma:</em> ${inv.completion_date}<br/>
+            <em>Fizetési határidő:</em> ${inv.payment_deadline}<br/>
+            <em>Végösszeg:</em> ${inv.total_amount.toFixed(2)} Ft<br/>
+            <em>ÁFA kulcs:</em> ${inv.vat_rate.toFixed(2)} %<br/>
+            <div class="actions">
+              <button onclick="deleteInvoice(${inv.id})">Törlés</button>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      } catch (err) {
+        console.error("Hiba a számlák lekérésekor:", err);
+        document.getElementById('invoices').innerText = 'Nem sikerült betölteni a számlákat.';
+      }
+    }
+
+    function resetForm() {
+      document.getElementById('invoiceId').value = '';
+      document.getElementById('issuer').value = partners.length > 0 ? partners[0].id : '';
+      document.getElementById('buyer').value = partners.length > 0 ? partners[0].id : '';
+      document.getElementById('invoice_number').value = '';
+      document.getElementById('issue_date').value = '';
+      document.getElementById('completion_date').value = '';
+      document.getElementById('payment_deadline').value = '';
+      document.getElementById('total_amount').value = '';
+      document.getElementById('vat_rate').value = '27';
+      document.getElementById('formTitle').innerText = 'Új számla';
+      document.getElementById('errorMessage').style.display = 'none';
+    }
+
+    async function saveInvoice() {
+      const id = document.getElementById('invoiceId').value;
+      const issuer_id = document.getElementById('issuer').value;
+      const buyer_id = document.getElementById('buyer').value;
+      const invoice_number = document.getElementById('invoice_number').value.trim();
+      const issue_date = document.getElementById('issue_date').value;
+      const completion_date = document.getElementById('completion_date').value;
+      const payment_deadline = document.getElementById('payment_deadline').value;
+      const total_amount = parseFloat(document.getElementById('total_amount').value);
+      const vat_rate = parseFloat(document.getElementById('vat_rate').value);
+
+      if (!issuer_id || !buyer_id || !invoice_number || !issue_date || !completion_date || !payment_deadline || isNaN(total_amount) || isNaN(vat_rate)) {
+        showError("Minden mezőt ki kell tölteni!");
+        return;
+      }
+
+      const data = {
+        issuer_id: Number(issuer_id),
+        buyer_id: Number(buyer_id),
+        invoice_number,
+        issue_date,
+        completion_date,
+        payment_deadline,
+        total_amount,
+        vat_rate
+      };
+
+      try {
+        let res;
+        if (id) {
+          // update
+          res = await fetch(`/invoices/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+        } else {
+          // create
+          res = await fetch('/invoices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+        }
+
+        if (!res.ok) {
+          const err = await res.json();
+          showError(err.message || 'Hiba történt a mentés során.');
+          return;
+        }
+
+        resetForm();
+        fetchInvoices();
+      } catch (err) {
+        showError('Hálózati hiba történt.');
+        console.error(err);
+      }
+    }
+
+    function showError(msg) {
+      const errDiv = document.getElementById('errorMessage');
+      errDiv.textContent = msg;
+      errDiv.style.display = 'block';
+    }
+
+    async function editInvoice(id) {
+      try {
+        const res = await fetch(`/invoices/${id}`);
+        if (!res.ok) {
+          showError('Nem található a számla.');
+          return;
+        }
+        const inv = await res.json();
+
+        document.getElementById('invoiceId').value = inv.id;
+        document.getElementById('issuer').value = inv.issuer_id;
+        document.getElementById('buyer').value = inv.buyer_id;
+        document.getElementById('invoice_number').value = inv.invoice_number;
+        document.getElementById('issue_date').value = inv.issue_date;
+        document.getElementById('completion_date').value = inv.completion_date;
+        document.getElementById('payment_deadline').value = inv.payment_deadline;
+        document.getElementById('total_amount').value = inv.total_amount;
+        document.getElementById('vat_rate').value = inv.vat_rate;
+
+        document.getElementById('formTitle').innerText = 'Számla szerkesztése';
+        document.getElementById('errorMessage').style.display = 'none';
+      } catch (err) {
+        showError('Hiba történt a számla betöltésekor.');
+      }
+    }
+
+    async function deleteInvoice(id) {
+      if (!confirm('Biztosan törlöd a számlát?')) return;
+      try {
+        const res = await fetch(`/invoices/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const err = await res.json();
+          alert(err.message || 'Hiba történt a törlés során.');
+          return;
+        }
+        fetchInvoices();
+      } catch (err) {
+        alert('Hálózati hiba történt.');
+      }
+    }
+
+    // Init
+    (async () => {
+      await fetchPartners();
+      resetForm();
+      fetchInvoices();
+    })();
+  </script>
+
+  <style>
+    body { font-family: Arial, sans-serif; margin: 1em; max-width: 800px; }
+    label { display: block; margin-top: 0.5em; }
+    input, select { width: 100%; padding: 0.5em; margin-top: 0.2em; }
+    button { margin-top: 1em; padding: 0.5em 1em; }
+    .invoice { border: 1px solid #ccc; margin: 0.5em 0; padding: 0.5em; }
+    .actions button { margin-right: 0.5em; }
+    .error { color: red; margin-top: 0.5em; }
+  </style>
+</body>
+</html>
